@@ -1,5 +1,6 @@
 from socket import *
 from time import ctime
+import cmdFunc
 HOST = ''
 PORT = 21567
 BUFSIZ = 1024
@@ -14,6 +15,7 @@ while True:
     while True:
         data = tcpCliSock.recv(BUFSIZ)
         data = data.decode()
+        data = cmdFunc.cmdExcute(data)
         if not data:
             break
         tcpCliSock.send(('[%s] %s' % (ctime(), data)).encode())
