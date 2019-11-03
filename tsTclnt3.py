@@ -8,6 +8,7 @@ tcpCliSock = socket(AF_INET, SOCK_STREAM)
 tcpCliSock.connect(ADDR)
 while True:
     data = input('> ')
+    data = data.encode()
     if not data:
         break
     tcpCliSock.send(data)
