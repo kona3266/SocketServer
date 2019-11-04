@@ -1,2 +1,2 @@
 # SocketServer
-#TCP
+#TCP UDP
