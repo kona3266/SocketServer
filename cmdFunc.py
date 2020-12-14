@@ -1,13 +1,16 @@
-import os
-import time
-def cmdExcute(command):
-    if command=="date":
-        return time.ctime()
-    elif command=="os":
-        return os.name
-    elif command=="ls":
-        return os.listdir(os.getcwd()) 
-    #listdir返回指定的文件夹包含的文件或文件夹的名字的列表。
-    #os.getcwd()返回当前目录名称。
+import subprocess
+import sys
+def cmdExcute(cmd):
+    cmd = cmd.split()
+    os_type = sys.platform
+    complete_process = subprocess.run(cmd,shell=True,capture_output=True)
+    if 'win' in os_type:
+        encoding = 'ansi'
     else:
-        return command
+        encoding = 'utf-8'
+    stdout = complete_process.stdout.decode(encoding)
+    stderr = complete_process.stderr.decode(encoding)
+    if complete_process.returncode:
+        return '{0}: {1}'.format(complete_process.returncode,stderr)
+    else:
+        return 'Output: {0}'.format(stdout)

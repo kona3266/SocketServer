@@ -10,16 +10,16 @@ udpCliSock = socket(AF_INET, SOCK_DGRAM)
 udpCliSock.bind(('localhost',21568))
 def recv(udpCliSock):
     while True:
-        data, ADDR = udpCliSock.recvfrom(1024)
+        data, ADDR = udpCliSock.recvfrom(BUFSIZ)
         if data:
             print(ADDR, 'says:', data.decode())
+            print('>')
 def send(udpCliSock,ADDR):
     while True:
         msg = input('>')
         if not msg:
             break
         udpCliSock.sendto(msg.encode(), ADDR)
-udpCliSock.sendto('initializing'.encode(),ADDR)
-threading.Thread(target=send,args=(udpCliSock, ADDR)).start()
-threading.Thread(target=recv,args=(udpCliSock,)).start()
-    
+udpCliSock.sendto('initializing'.encode(), ADDR)
+threading.Thread(target=send, args=(udpCliSock, ADDR)).start()
+threading.Thread(target=recv, args=(udpCliSock,)).start()
