@@ -14,17 +14,8 @@ type tconn struct {
 	wt   *bufio.Writer
 }
 
-func main() {
-	service := ":7777"
-	tcpaddr, _ := net.ResolveTCPAddr("tcp4", service)
-
-	listener, _ := net.ListenTCP("tcp", tcpaddr)
-	for {
-		conn, _ := listener.Accept()
-		c := tconn{conn: conn, rd: bufio.NewReader(conn), wt: bufio.NewWriter(conn)}
-		go handleClient(c)
-	}
-
+func NewConn(conn net.Conn) tconn {
+	return tconn{conn: conn, rd: bufio.NewReader(conn), wt: bufio.NewWriter(conn)}
 }
 
 func (c tconn) Close() error {
@@ -47,21 +38,53 @@ func (c tconn) Write(data []byte) (int, error) {
 	return n, err
 }
 
-func handleClient(conn tconn) {
-	// close tcp conn after handle
+func handleClient(ln net.Listener) {
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("ln.Accept", err)
+			return
+		}
+		go handleConn(NewConn(conn))
+	}
+}
+
+func handleConn(conn tconn) {
 	defer conn.Close()
 	for {
-
 		request, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("read err", err)
 			break
 		}
 
-		fmt.Println(string(request))
+		fmt.Println("server read", string(request))
 		daytime := time.Now().String()
-		fmt.Println(daytime)
 		conn.Write([]byte(daytime))
 	}
+}
+
+func startServer() net.Listener {
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+	go handleClient(ln)
+	return ln
+}
+
+func main() {
+	ln := startServer()
+	defer ln.Close()
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		panic(err)
+	}
+
+	c := NewConn(conn)
+	c.Write([]byte("HEAD / HTTP/1.0\r\n\r\n"))
+	result, _ := c.ReadMessage()
+	fmt.Println("client read", string(result))
+	c.Close()
 
 }
