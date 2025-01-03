@@ -109,10 +109,9 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 
 func IntToBytes(n int) []byte {
 	x := int32(n)
-
-	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
-	return bytesBuffer.Bytes()
+	head := make([]byte, 4)
+	binary.BigEndian.PutUint32(head, uint32(x))
+	return head
 }
 
 func BytesToInt(b []byte) int {
