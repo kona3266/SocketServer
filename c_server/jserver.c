@@ -106,7 +106,7 @@ void handle_connection(int sockfd)
         }
         memcpy(&net_num, head, 4);
         body_len = (int)ntohl(net_num);
-        char *body = calloc(body_len+1, 1);
+        char *body = (char *)calloc(body_len+1, 1);
         body[body_len] = '\0';
         // read body
         while(offset < body_len) {
@@ -134,7 +134,7 @@ void handle_connection(int sockfd)
         // return val + 1 to client
         rep_len = count_digits(val+1);
 
-        char *rep = calloc(rep_len, 1);
+        char *rep = (char *)calloc(rep_len, 1);
         itoa(val+1, rep);
         len = htonl(rep_len);
         if (send_all(sockfd, &len, sizeof(len)) != sizeof(len)) {
@@ -159,7 +159,7 @@ void *server_thread(void *arg) {
     int sockfd = config->sockfd;
     free(config);
     unsigned long id = (unsigned long) pthread_self();
-    //printf("Thread %lu created to handle connection with socket %d\n", id, sockfd);
+    printf("Thread %lu created to handle connection with socket %d\n", id, sockfd);
     handle_connection(sockfd);
     // printf("Thread %ld done\n", id);
     // fflush(stdout); 
