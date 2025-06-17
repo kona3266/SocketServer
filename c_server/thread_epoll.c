@@ -320,14 +320,7 @@ int main(int argc, char **argv){
     printf("serve on port %d\n", portnum);
 
     int listener_fd = listen_inet_socket(portnum);
-    make_sockfd_non_blocking(listener_fd);
-    int epollfd = epoll_create1(0);
 
-    if (epollfd < 0)
-    {
-        perror("epoll_create1");
-        exit(1);
-    }
     for (int i = 0; i < THREAD_POOL_SIZE; i++) {
         thread_pool[i].epoll_fd = epoll_create1(0);
         if (thread_pool[i].epoll_fd == -1) {
@@ -336,64 +329,44 @@ int main(int argc, char **argv){
         }
         pthread_create(&thread_pool[i].thread, NULL, worker_thread, &thread_pool[i]);
     }
-    struct epoll_event accept_event;
-    accept_event.events = EPOLLIN;
-    accept_event.data.fd = listener_fd;
-    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listener_fd, &accept_event) == -1) {
-        perror("epoll_ctl: listen_fd");
-        exit(EXIT_FAILURE);
-    }
+
     static int next_thread = 0;
     while (1) {
-        struct epoll_event events[10];
-        int nfds = epoll_wait(epollfd, events, 10, -1);
-        for (int i = 0; i < nfds; i++) {
-            if (events[i].data.fd == listener_fd) {
-                struct sockaddr_in peer_addr;
-                socklen_t peer_addr_len = sizeof(peer_addr);
-                int newsockfd = accept(listener_fd, (struct sockaddr *)&peer_addr, &peer_addr_len);
+        struct sockaddr_in peer_addr;
+        socklen_t peer_addr_len = sizeof(peer_addr);
+        int newsockfd = accept(listener_fd, (struct sockaddr *)&peer_addr, &peer_addr_len);
 
-                if (newsockfd < 0)
-                {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    {
-                        printf("accept returned EAGAIN or EWOULDBLOCK\n");
-                    }
-                    else
-                    {
-                        perror("accept");
-                        exit(1);
-                    }
-                }else{
-                    make_sockfd_non_blocking(newsockfd);
-                    if (newsockfd > MAXFDS)
-                    {
-                        printf("socket fd %d > MAXFDS", newsockfd);
-                        exit(1);
-                    }
-                    connection_t *new_conn = malloc(sizeof(connection_t));
-                    new_conn->fd = newsockfd;
-                    new_conn->cur_state = READ_HEAD;
-                    memset(new_conn->read_buf, 0, sizeof(new_conn->read_buf));
-                    struct epoll_event event = {0};
-                    event.data.ptr = new_conn;
-                    event.events |= EPOLLIN;
-
-                    int selected_thread = next_thread;
-                    next_thread = (next_thread + 1) % THREAD_POOL_SIZE;
-
-                    pthread_mutex_lock(&mutex);
-                    if (epoll_ctl(thread_pool[selected_thread].epoll_fd, 
-                             EPOLL_CTL_ADD, newsockfd, &event) == -1) {
-                        perror("epoll_ctl: client_fd");
-                        close(newsockfd);
-                        free(new_conn);
-                    }
-                    pthread_mutex_unlock(&mutex);
-
-                }
-
+        if (newsockfd < 0)
+        {
+            perror("accept");
+            exit(1);
+        }else{
+            make_sockfd_non_blocking(newsockfd);
+            if (newsockfd > MAXFDS)
+            {
+                printf("socket fd %d > MAXFDS", newsockfd);
+                exit(1);
             }
+            connection_t *new_conn = malloc(sizeof(connection_t));
+            new_conn->fd = newsockfd;
+            new_conn->cur_state = READ_HEAD;
+            memset(new_conn->read_buf, 0, sizeof(new_conn->read_buf));
+            struct epoll_event event = {0};
+            event.data.ptr = new_conn;
+            event.events |= EPOLLIN;
+
+            int selected_thread = next_thread;
+            next_thread = (next_thread + 1) % THREAD_POOL_SIZE;
+
+            pthread_mutex_lock(&mutex);
+            if (epoll_ctl(thread_pool[selected_thread].epoll_fd,
+                        EPOLL_CTL_ADD, newsockfd, &event) == -1) {
+                perror("epoll_ctl: client_fd");
+                close(newsockfd);
+                free(new_conn);
+            }
+            pthread_mutex_unlock(&mutex);
+
         }
     }
     close(listener_fd);
