@@ -33,15 +33,17 @@ SocketServer/
 ├── go-tlv/                 # Go 实验代码：通用 LV（Length-Value）流式读写封装
 │   ├── go.mod
 │   └── raw_tcp_LV.go       # Conn/Reader/Writer 抽象，支持大数据（500MB）传输校验
-├── c/                      # C 实现（三种并发模型）
+├── c/                      # C 实现（三种并发模型 + 客户端）
 │   ├── Makefile
 │   ├── utils.c / utils.h   # 公共工具：创建监听 socket 等
 │   ├── thread_server.c     # 模型一：thread-per-connection（默认端口 9090）
 │   ├── epoll_server.c      # 模型二：单线程 epoll 事件循环（非阻塞 IO + 状态机）
-│   └── epoll_threadpool.c  # 模型三：epoll + 固定线程池（4 worker，各自持有 epoll 实例）
+│   ├── epoll_threadpool.c  # 模型三：epoll + 固定线程池（4 worker，各自持有 epoll 实例）
+│   └── client.c            # 压测客户端：./client [host] [port] [count]
 ├── python/                 # Python 实现
 │   ├── jserver.py          # thread-per-connection（监听 localhost:8888，backlog 50000）
-│   └── async_jserver.py    # asyncio 单线程事件循环实现
+│   ├── async_jserver.py    # asyncio 单线程事件循环实现
+│   └── jclient.py          # 压测客户端：python3 jclient.py --host H --port P --count N
 ├── LICENSE
 └── README.md
 ```
@@ -75,6 +77,9 @@ cd c && make          # 生成 thread_server / epoll_server / epoll_threadpool
 ./thread_server 9090  # thread-per-connection，端口通过 argv[1] 指定
 ./epoll_server 9090   # 单线程 epoll
 ./epoll_threadpool 9090
+
+# 客户端（默认 127.0.0.1:8888，100 次请求，可与任意语言的服务器互通）
+./client [host] [port] [count]
 ```
 
 ### Python
@@ -82,6 +87,9 @@ cd c && make          # 生成 thread_server / epoll_server / epoll_threadpool
 ```bash
 python3 python/jserver.py          # 多线程版（日志写入 ./server_log）
 python3 python/async_jserver.py    # asyncio 版
+
+# 客户端（可与任意语言的服务器互通）
+python3 python/jclient.py [--host 127.0.0.1] [--port 8888] [--count 100]
 ```
 
 ### 快速验证

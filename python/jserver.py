@@ -20,7 +20,7 @@ def handle_request(req, bint):
     wfile = req.makefile("wb", 0)
     # add 1 to the input, then write it back
     bint += 1
-    bstr = json.dumps(bint)
+    bstr = json.dumps(bint).encode()
     size = len(bstr)
     sizebytes = struct.pack('>i', size)
     wfile.write(sizebytes)

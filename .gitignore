@@ -10,4 +10,5 @@ server_log
 c/thread_server
 c/epoll_server
 c/epoll_threadpool
+c/client
 *.o
