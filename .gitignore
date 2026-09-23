@@ -1,2 +1,13 @@
+# IDE
 /.vscode/
+
+# Python
 /__pycache__/
+*.pyc
+server_log
+
+# C build artifacts
+c/thread_server
+c/epoll_server
+c/epoll_threadpool
+*.o
